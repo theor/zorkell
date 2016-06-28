@@ -1,14 +1,11 @@
 module Lib where
 
+import Types
 import Text.Printf
 import Data.Word
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as BS
 
-newtype ByteAddr = ByteAddr Word16 -- deriving (Show)
-instance Show ByteAddr where
-  show (ByteAddr b) = printf "0x%04X" b
-b = ByteAddr
 data Header = Header {
                   version :: Word8 -- 0
                 , flags1 :: Word8 -- 1
@@ -46,7 +43,7 @@ readStory x = do
   abbrevLoc <- getByteAddr      @@ 0x18
   length <- getWord16           @@ 0x1A
   checksum <- getWord16         @@ 0x1C
-  
+
   return $ Header v flags1 base initPc dictionaryLoc
     objectTableLoc globalVarLoc baseStaticAddr flags2 abbrevLoc
     length checksum
