@@ -3,7 +3,7 @@ import Data.Either
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as S
 
-import Lib
+import Header
 
 main :: IO ()
 main = hspec $ do
