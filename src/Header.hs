@@ -22,6 +22,11 @@ data Header = Header {
               }
   deriving (Show)
 
+data Story = Story {
+    header :: Header
+  , staticMem :: B.ByteString
+} deriving (Show)
+
 getWord16 = BS.getWord16be
 getByteAddr = ByteAddr <$> getWord16
 f @@ i = do
