@@ -1,4 +1,4 @@
-module ZString where
+module ZString (decodeString, decode) where
 
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.BitGet as BG

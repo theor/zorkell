@@ -7,9 +7,15 @@ import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as S
 import qualified Data.Binary.Strict.BitGet as BG
 
+import Types
 import Header
 import ZString
 import OpCodes
+import qualified Dictionary
+
+minizork () = B.readFile "stories/minizork.z3"
+
+ev = either expectationFailure
 
 main :: IO ()
 main = hspec $ do
@@ -39,12 +45,30 @@ main = hspec $ do
   describe "Read Story Header" $
 
     it "should load file" $ do
-      fi <- B.readFile "stories/minizork.z3"
-      putStrLn "read"
+      fi <- minizork ()
       case readStory fi of
         Left a -> expectationFailure a
         Right a -> print $ header a
 
   describe "Opcodes" $
-    it "should " $
+    it "should decode short form" $
       BG.runBitGet (B.pack [0b10000000]) OpCodes.readForm `shouldBe` Right Short
+
+  describe "Dictionary" $ do
+    it "should read dict header" $ do
+      fi <- minizork ()
+      case fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi of
+        Left a -> expectationFailure a
+        Right a -> print a
+    it "should read dict header 2" $ do
+      fi <- minizork ()
+      case fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi of
+        Left a -> expectationFailure a
+        Right a -> print a
+
+    it "should read dict entries" $ do
+      fi <- minizork ()
+
+      either expectationFailure print $ do
+        eh <- fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi
+        fst . S.runGet (Dictionary.readDictionary eh) $ fi
