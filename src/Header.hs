@@ -1,10 +1,12 @@
 module Header where
 
-import Types
-import Text.Printf
 import Data.Word
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as BS
+
+import Types
+import BinUtils
+import Text.Printf
 
 data Header = Header {
                   version :: Word8 -- 0
@@ -24,16 +26,12 @@ data Header = Header {
 
 data Story = Story {
     header :: Header
+  , dynMem :: B.ByteString
   , staticMem :: B.ByteString
 } deriving (Show)
 
-getWord16 = BS.getWord16be
-getByteAddr = ByteAddr <$> getWord16
-f @@ i = do
-  bytesRead <- BS.bytesRead
-  if bytesRead == i then f else fail $ printf "mismatch, should be at byte 0x%02x, is at 0x%02x" i bytesRead
-readStory :: t -> BS.Get Header
-readStory x = do
+readHeader :: BS.Get Header
+readHeader = do
   v <- BS.getWord8              @@ 0x0
   flags1 <- BS.getWord8         @@ 0x1
   BS.skip 2                     @@ 0x2
@@ -52,3 +50,11 @@ readStory x = do
   return $ Header v flags1 base initPc dictionaryLoc
     objectTableLoc globalVarLoc baseStaticAddr flags2 abbrevLoc
     length checksum
+
+readStory :: B.ByteString -> Either String Story
+readStory bstr = do
+  let (eheader,_) = BS.runGet readHeader bstr
+  header <- eheader
+  let staticOffset = toInt . baseStaticAddr $ header
+  let (dyn,stat) = B.splitAt staticOffset bstr
+  return $ Story header dyn stat -- (B.take staticOffset (B.singleton 0)

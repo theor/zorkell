@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib,Types,Header,ZString
+  exposed-modules:     Lib,Types,Header,ZString,BinUtils,OpCodes,Dictionary
   -- other-modules:
   build-depends:       base >= 4.7 && < 5
                      , vector
