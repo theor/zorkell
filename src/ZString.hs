@@ -2,23 +2,25 @@ module ZString (decodeString, decode) where
 
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.BitGet as BG
-import qualified Data.Binary.Strict.Get as S
 import Data.Word
-import Data.Either
+import Control.Exception.Base
 import Control.Monad.State.Lazy
 import Control.Arrow
 
-newtype Abbr = Abbr Integer
-
-newtype WordZstringAddress = WordZstring Integer
-newtype ZstringAddress = Zstring Integer
-
-getAbbrWordAddress ::  Abbr -> WordZstringAddress
-getAbbrWordAddress (Abbr a) = WordZstring 0
+-- newtype Abbr = Abbr Integer
+--
+-- newtype WordZstringAddress = WordZstring Integer
+-- newtype ZstringAddress = Zstring Integer
+--
+-- getAbbrWordAddress ::  Abbr -> WordZstringAddress
+-- getAbbrWordAddress (Abbr a) = WordZstring 0
 
 type Z3Pack = (Bool, [Word8])
 
-alphabetTable = " ?????abcdefghijklmnopqrstuvwxyz"
+alphabetTable :: [String]
+alphabetTable = [ " ?????abcdefghijklmnopqrstuvwxyz",
+                  " ?????ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                  " ??????\n0123456789.,!?_#'\"/\\-:()" ]
 
 decode :: BG.BitGet Z3Pack
 decode = do
@@ -28,12 +30,13 @@ decode = do
   c3 <- BG.getAsWord8 5
   return (end,[c1,c2,c3])
 
-at = (Prelude.!!) alphabetTable . (\x -> fromIntegral x :: Int)
+at :: Int -> Word8 -> Char
+at a = (Prelude.!!) (alphabetTable !! a) . (\x -> fromIntegral x :: Int)
 
 data DecodeState = Alphabet Int | Abbrev Int | Leading | Trailing Word8
 -- dec :: Word8 -> (Maybe Char, DecodeState)
-dec :: DecodeState -> Word8 -> (String, DecodeState)
-dec state x = runState comp state
+stateMachine :: DecodeState -> Word8 -> (String, DecodeState)
+stateMachine decState x = runState comp decState
   where
     comp = do {
         s <- get;
@@ -50,19 +53,21 @@ dec state x = runState comp state
           (Leading, _) -> do { put (Trailing x); return "" }
           (Trailing high, _) -> return [toEnum $ fromIntegral high * 32 + fromIntegral x]
 
-          (Alphabet a, x) -> do { put (Alphabet 0); return [at x] }
+          (Alphabet a, i) -> do { put (Alphabet 0); return [at a i] }
+
+          (Abbrev _a, _) -> assert False $ return ""
         -- return $ at x
     }
 
 
 
 decodeString_ :: DecodeState -> B.ByteString -> String
-decodeString_ state s =
+decodeString_ decState s =
   case BG.runBitGet s decode of
-    Left a -> []
+    Left _ -> []
     Right (end,c) ->
-      let f (str, st) x = first (str ++) $ dec st x
-          (string, finalState) = foldl f ("",state) c in
+      let f (str, st) x = first (str ++) $ stateMachine st x
+          (string, finalState) = foldl f ("",decState) c in
         string ++ if end then "" else decodeString_ finalState (B.drop 2 s)
         -- foldl at c -- ++ (if end then "" else decodeString_ (B.drop 2 s))
 

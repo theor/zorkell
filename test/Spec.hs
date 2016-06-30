@@ -6,6 +6,7 @@ import Data.Word
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as S
 import qualified Data.Binary.Strict.BitGet as BG
+import Control.Monad
 
 import Types
 import Header
@@ -15,7 +16,7 @@ import qualified Dictionary
 
 minizork () = B.readFile "stories/minizork.z3"
 
-ev = either expectationFailure
+ev = flip $ either expectationFailure
 
 main :: IO ()
 main = hspec $ do
@@ -60,15 +61,13 @@ main = hspec $ do
       case fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi of
         Left a -> expectationFailure a
         Right a -> print a
-    it "should read dict header 2" $ do
-      fi <- minizork ()
-      case fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi of
-        Left a -> expectationFailure a
-        Right a -> print a
 
     it "should read dict entries" $ do
       fi <- minizork ()
+      let r = do eh <- fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi
+                 fst . S.runGet (Dictionary.readDictionary eh) $ fi
 
-      either expectationFailure print $ do
-        eh <- fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi
-        fst . S.runGet (Dictionary.readDictionary eh) $ fi
+      ev r $ \x -> do
+        print . Dictionary.header $ x
+        let f = map print (take 10 . Dictionary.entries $ x)
+        sequence_ f

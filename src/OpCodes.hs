@@ -3,8 +3,8 @@
 module OpCodes where
 
 import BinUtils
-import Data.Word
-import qualified Data.ByteString as B
+-- import Data.Word
+-- import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as BS
 import qualified Data.Binary.Strict.BitGet as BG
 
@@ -36,6 +36,7 @@ readOpandCount form = do
 
   -- return Op0
 
+readOp :: BS.Get (Either String (OpcodeForm, OperandCount))
 readOp = do
   byte <- BS.getByteString 1 @@ 0
   return $ do

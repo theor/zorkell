@@ -6,7 +6,6 @@ import qualified Data.Binary.Strict.Get as BS
 
 import Types
 import BinUtils
-import Text.Printf
 
 data Header = Header {
                   version :: Word8 -- 0
@@ -33,28 +32,28 @@ data Story = Story {
 readHeader :: BS.Get Header
 readHeader = do
   v <- BS.getWord8              @@ 0x0
-  flags1 <- BS.getWord8         @@ 0x1
+  bflags1 <- BS.getWord8         @@ 0x1
   BS.skip 2                     @@ 0x2
   base <- getByteAddr           @@ 0x4
-  initPc <- getByteAddr         @@ 0x6
-  dictionaryLoc <- getByteAddr  @@ 0x8
-  objectTableLoc <- getByteAddr @@ 0xA
-  globalVarLoc <- getByteAddr   @@ 0xC
-  baseStaticAddr <- getByteAddr @@ 0xE
-  flags2 <- BS.getWord8         @@ 0x10
+  binitPc <- getByteAddr         @@ 0x6
+  bdictionaryLoc <- getByteAddr  @@ 0x8
+  bobjectTableLoc <- getByteAddr @@ 0xA
+  bglobalVarLoc <- getByteAddr   @@ 0xC
+  bbaseStaticAddr <- getByteAddr @@ 0xE
+  bflags2 <- BS.getWord8         @@ 0x10
   BS.skip 7
-  abbrevLoc <- getByteAddr      @@ 0x18
-  length <- getWord16           @@ 0x1A
-  checksum <- getWord16         @@ 0x1C
+  babbrevLoc <- getByteAddr      @@ 0x18
+  blength <- getWord16           @@ 0x1A
+  bchecksum <- getWord16         @@ 0x1C
 
-  return $ Header v flags1 base initPc dictionaryLoc
-    objectTableLoc globalVarLoc baseStaticAddr flags2 abbrevLoc
-    length checksum
+  return $ Header v bflags1 base binitPc bdictionaryLoc
+    bobjectTableLoc bglobalVarLoc bbaseStaticAddr bflags2 babbrevLoc
+    blength bchecksum
 
 readStory :: B.ByteString -> Either String Story
 readStory bstr = do
   let (eheader,_) = BS.runGet readHeader bstr
-  header <- eheader
-  let staticOffset = toInt . baseStaticAddr $ header
+  vheader <- eheader
+  let staticOffset = toInt . baseStaticAddr $ vheader
   let (dyn,stat) = B.splitAt staticOffset bstr
-  return $ Story header dyn stat -- (B.take staticOffset (B.singleton 0)
+  return $ Story vheader dyn stat -- (B.take staticOffset (B.singleton 0)

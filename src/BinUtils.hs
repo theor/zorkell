@@ -1,14 +1,18 @@
 module BinUtils where
 
+  import Data.Word
   import Text.Printf
 
   import Types
   import qualified Data.Binary.Strict.Get as BS
-  import qualified Data.Binary.Strict.BitGet as BG
 
+  getWord16 :: BS.Get Word16
   getWord16 = BS.getWord16be
+
+  getByteAddr :: BS.Get ByteAddr
   getByteAddr = ByteAddr <$> getWord16
 
+  toInt :: ByteAddr -> Int
   toInt (ByteAddr a) = fromIntegral a :: Int
 
   -- class (Monad m) => ReadCount m where
@@ -18,7 +22,10 @@ module BinUtils where
   -- instance ReadCount BG.BitGet where
   --   bytesRead = BG.r
 
+  (@@) :: BS.Get b -> Int -> BS.Get b
   f @@ i = do
     bytesRead <- BS.bytesRead
     if bytesRead == i then f else fail $ printf "mismatch, should be at byte 0x%02x, is at 0x%02x" i bytesRead
+    
+  (@@@) :: BS.Get b -> ByteAddr -> BS.Get b
   f @@@ (ByteAddr a) = f @@ (fromIntegral a :: Int)
