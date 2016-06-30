@@ -3,7 +3,7 @@ module Types where
 import Text.Printf
 import Data.Word
 
-newtype ByteAddr = ByteAddr Word16 -- deriving (Show)
+newtype ByteAddr = ByteAddr Word16 deriving (Eq)
 instance Show ByteAddr where
   show (ByteAddr b) = printf "0x%04X" b
 

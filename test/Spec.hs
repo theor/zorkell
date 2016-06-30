@@ -12,6 +12,7 @@ import Types
 import Header
 import ZString
 import OpCodes
+import ObjectTable
 import qualified Dictionary
 
 minizork () = B.readFile "stories/minizork.z3"
@@ -71,3 +72,26 @@ main = hspec $ do
         print . Dictionary.header $ x
         let f = map print (take 10 . Dictionary.entries $ x)
         sequence_ f
+
+  describe "Object Table" $ do
+    it "should read table" $ do
+      fi <- minizork ()
+      let r = fst . S.runGet (ObjectTable.readObject (ByteAddr 0x03C6) 2) $ fi
+
+      ev r $ \x -> do
+        print x
+        parent x `shouldBe` ObjectNumber 0x1b
+        sibling x `shouldBe` ObjectNumber 0x77
+        child x `shouldBe` ObjectNumber 0x5f
+        properties x `shouldBe` ByteAddr 0x0A5D
+
+    it "should read table" $ do
+      fi <- minizork ()
+      let r = fst . S.runGet (ObjectTable.readPropHeader (ByteAddr 0x0A5D)) $ fi
+
+      ev r $ \x -> do
+        print x
+        -- parent x `shouldBe` ObjectNumber 0x1b
+        -- sibling x `shouldBe` ObjectNumber 0x77
+        -- child x `shouldBe` ObjectNumber 0x5f
+        -- properties x `shouldBe` ByteAddr 0x0A5D

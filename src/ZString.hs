@@ -6,7 +6,7 @@ import Data.Word
 import Control.Exception.Base
 import Control.Monad.State.Lazy
 import Control.Arrow
-
+import Debug.Trace
 -- newtype Abbr = Abbr Integer
 --
 -- newtype WordZstringAddress = WordZstring Integer
@@ -28,12 +28,13 @@ decode = do
   c1 <- BG.getAsWord8 5
   c2 <- BG.getAsWord8 5
   c3 <- BG.getAsWord8 5
+  -- traceShowM (end, c1, c2, c3)
   return (end,[c1,c2,c3])
 
 at :: Int -> Word8 -> Char
 at a = (Prelude.!!) (alphabetTable !! a) . (\x -> fromIntegral x :: Int)
 
-data DecodeState = Alphabet Int | Abbrev Int | Leading | Trailing Word8
+data DecodeState = Alphabet Int | Abbrev Int | Leading | Trailing Word8 deriving (Show)
 -- dec :: Word8 -> (Maybe Char, DecodeState)
 stateMachine :: DecodeState -> Word8 -> (String, DecodeState)
 stateMachine decState x = runState comp decState
@@ -63,11 +64,13 @@ stateMachine decState x = runState comp decState
 
 decodeString_ :: DecodeState -> B.ByteString -> String
 decodeString_ decState s =
+  -- trace "decodeString_" $
   case BG.runBitGet s decode of
-    Left _ -> []
+    Left e -> trace ("END OF STRING" ++ e) []
     Right (end,c) ->
       let f (str, st) x = first (str ++) $ stateMachine st x
-          (string, finalState) = foldl f ("",decState) c in
+          (string, finalState) = foldl (f) ("",decState) c in
+        -- traceShow (string, finalState, end) $
         string ++ if end then "" else decodeString_ finalState (B.drop 2 s)
         -- foldl at c -- ++ (if end then "" else decodeString_ (B.drop 2 s))
 

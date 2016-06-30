@@ -7,7 +7,7 @@ import qualified Data.Binary.Strict.Get as BS
 
 import Types
 import BinUtils
-import Header
+-- import Header
 import qualified ZString
 
 --   n     list of keyboard input codes   entry-length  number-of-entries
