@@ -33,7 +33,7 @@ data Story = Story {
 instance Show Story where
   show s = printf "Story { header = %s, dynMem = %i, staticMem = %i }" (show . header $ s) (B.length . dynMem $ s) (B.length . staticMem $ s)
 
-type StoryReader a = StateT (Either String Story,Int) (Either String) a
+type StoryReader a = StateT (Story,Int) (Either String) a
 -- getWord8 :: StoryReader a
 -- getWord8 = lift BS.getWord8
 
@@ -42,8 +42,13 @@ isAt = do x <- get
           return $ snd x -- lift $ return 1
 
 setAt :: Int -> StoryReader ()
-setAt x = do (story,offset) <- get
-             put (story, x)
+setAt x = do
+   (story,offset) <- get
+   put (story, x)
+setAtAddr :: ByteAddr -> StoryReader ()
+setAtAddr x = do
+  (story,offset) <- get
+  put (story, toInt x)
 
 exec :: BS.Get a -> StoryReader a
 exec x = do
@@ -52,10 +57,20 @@ exec x = do
              xx <- x
              bread <- BS.bytesRead
              return (bread,xx)
-  let yy = do s <- story
-              fst . BS.runGet r . dynMem $ s
+  let yy = fst . BS.runGet r . dynMem $ story
   setAt $ either (const offset) fst yy
   lift (fmap snd yy)
+--
+run :: Either String Story -> StoryReader a -> Either String a
+run story x = do
+  s <- story
+  y <- runStateT x (s, 0)
+  return $ fst y
+
+getHeader :: StoryReader Header
+getHeader = do
+  (s,_) <- get
+  return $ header s
 
 readHeader :: BS.Get Header
 readHeader = do
@@ -78,11 +93,10 @@ readHeader = do
     bobjectTableLoc bglobalVarLoc bbaseStaticAddr bflags2 babbrevLoc
     blength bchecksum
 
-readStory :: B.ByteString -> StoryReader ()
+readStory :: B.ByteString -> Either String Story
 readStory bstr = do
   let eheader = (fst . BS.runGet readHeader) bstr
-  vheader <- lift eheader
+  vheader <- eheader
   let staticOffset = toInt . baseStaticAddr $ vheader
   let (dyn,stat) = B.splitAt staticOffset bstr
-  let story = Story vheader dyn stat -- (B.take staticOffset (B.singleton 0)
-  put (Right story, 0)
+  return $ Story vheader dyn stat -- (B.take staticOffset (B.singleton 0)

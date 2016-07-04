@@ -1,6 +1,7 @@
 module ObjectTable where
 
 import Control.Monad
+import Control.Monad.State
 import Data.Word
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as BS
@@ -35,44 +36,66 @@ data Object = Object { header :: ObjectHeader
 --text-length     text of short name of object
 -----byte----   --some even number of bytes---
 type PropertyHeader = (Int, String)
-readPropHeader :: ByteAddr -> BS.Get PropertyHeader
-readPropHeader o = do
-  BS.skip . toInt $ o
-  len <- (2*) . fromIntegral  <$> BS.getWord8
-  str <- BS.getByteString len
-  return (len, if len == 0 then "<unnamed>" else ZString.decodeString str)
+
+readPropHeader :: StoryReader PropertyHeader
+readPropHeader = do
+  (s,_) <- get
+  -- setAtAddr . objectTableLoc . Header.header $ s
+  exec $ do len <- (2*) . fromIntegral  <$> BS.getWord8
+            str <- BS.getByteString len
+            return (len, if len == 0 then "<unnamed>" else ZString.decodeString str)
+  -- s2 <- s
+  -- h <- Header.header s2
+  -- return 1
 
 objectAddr :: ByteAddr -> Int -> Int
 objectAddr h on = toInt h + 62 + 9 * (on - 1)
 
-readObjectHeader :: ByteAddr -> Int -> BS.Get ObjectHeader
-readObjectHeader h on = do
-  BS.skip $ objectAddr h on
-  f <- BS.getWord32be
-  p <- ObjectNumber <$> BS.getWord8
-  s <- ObjectNumber <$> BS.getWord8
-  c <- ObjectNumber <$> BS.getWord8
-  props <- getByteAddr
-  return $ ObjectHeader f p s c props
+getObjectAddr :: Int -> StoryReader Int
+getObjectAddr n = do
+  header <- getHeader
+  return $ objectAddr (objectTableLoc header) n
 
-readObject addr on = do
-  h <- readObjectHeader addr on
-  -- BS.skip
-  return h
+readObjectHeader :: Int -> StoryReader ObjectHeader
+readObjectHeader on = do
+  addr <- getObjectAddr on
+  setAt addr
+  exec $ do
+    f <- BS.getWord32be
+    p <- ObjectNumber <$> BS.getWord8
+    s <- ObjectNumber <$> BS.getWord8
+    c <- ObjectNumber <$> BS.getWord8
+    props <- getByteAddr
+    return $ ObjectHeader f p s c props
 
-readAllObjects :: ByteAddr -> BS.Get [ObjectHeader]
-readAllObjects a = return []
 
-objectCount :: ByteAddr -> BS.Get Int
-objectCount a = do
-  fstObj <- readObjectHeader a 1
+-- readObjectHeaderA :: Int -> BS.Get ObjectHeader
+-- readObjectHeaderA h on = do
+
+-- readObject addr on = do
+--   h <- readObjectHeader addr on
+--   -- BS.skip
+--   return h
+
+readAllObjects :: StoryReader [Object]
+readAllObjects = do
+  header <- getHeader
+  count <- objectCount
+  let r i = do obj <- readObjectHeader i
+               setAtAddr $ properties obj
+               (nameLen,nameStr) <- readPropHeader
+               return $ Object obj nameLen nameStr
+  let i = [1,2..count]
+  mapM r i
+
+objectCount :: StoryReader Int
+objectCount = do
+  fstObj <- readObjectHeader 1
   let fstPropTable = properties fstObj
-      fstObjAddr = objectAddr a 1
-      delta = toInt fstPropTable - fstObjAddr
-  traceM "OBJECT OUNT !!!!"
+  fstObjAddr <- getObjectAddr 1
+  let delta = toInt fstPropTable - fstObjAddr
   traceShowM (fstPropTable, fstObjAddr, delta)
   return $ delta `div` 9
-  -- fromIntegral <$> BS.getWord8
 
 readObjectTable (ByteAddr a) =
   BS.skip 31 -- property defaults table. 31 words in v1-3, 63 in v4+
