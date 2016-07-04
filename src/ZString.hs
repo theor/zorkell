@@ -1,4 +1,10 @@
-module ZString (decodeString, decode) where
+{-|
+Description : ZString management
+-}
+module ZString (
+    decodeString
+  , decode
+) where
 
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.BitGet as BG
@@ -7,6 +13,7 @@ import Control.Exception.Base
 import Control.Monad.State.Lazy
 import Control.Arrow
 import Debug.Trace
+
 -- newtype Abbr = Abbr Integer
 --
 -- newtype WordZstringAddress = WordZstring Integer
@@ -22,6 +29,7 @@ alphabetTable = [ " ?????abcdefghijklmnopqrstuvwxyz",
                   " ?????ABCDEFGHIJKLMNOPQRSTUVWXYZ",
                   " ??????\n0123456789.,!?_#'\"/\\-:()" ]
 
+-- |extract a tuple (isEnd,[char1,char2,char3]) from the ByteString
 decode :: BG.BitGet Z3Pack
 decode = do
   end <- BG.getBit
@@ -35,7 +43,7 @@ at :: Int -> Word8 -> Char
 at a = (Prelude.!!) (alphabetTable !! a) . (\x -> fromIntegral x :: Int)
 
 data DecodeState = Alphabet Int | Abbrev Int | Leading | Trailing Word8 deriving (Show)
--- dec :: Word8 -> (Maybe Char, DecodeState)
+
 stateMachine :: DecodeState -> Word8 -> (String, DecodeState)
 stateMachine decState x = runState comp decState
   where
@@ -57,7 +65,6 @@ stateMachine decState x = runState comp decState
           (Alphabet a, i) -> do { put (Alphabet 0); return [at a i] }
 
           (Abbrev _a, _) -> assert False $ return ""
-        -- return $ at x
     }
 
 
@@ -69,11 +76,10 @@ decodeString_ decState s =
     Left e -> trace ("END OF STRING" ++ e) []
     Right (end,c) ->
       let f (str, st) x = first (str ++) $ stateMachine st x
-          (string, finalState) = foldl (f) ("",decState) c in
+          (string, finalState) = foldl f ("",decState) c in
         -- traceShow (string, finalState, end) $
         string ++ if end then "" else decodeString_ finalState (B.drop 2 s)
-        -- foldl at c -- ++ (if end then "" else decodeString_ (B.drop 2 s))
 
-
+-- |decodes a string from a ByteString, starting at offset 0
 decodeString :: B.ByteString -> String
 decodeString = decodeString_ (Alphabet 0)

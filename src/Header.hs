@@ -1,9 +1,10 @@
 module Header where
 
+import Text.Printf
 import Data.Word
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as BS
-
+import Control.Monad.State
 import Types
 import BinUtils
 
@@ -27,7 +28,34 @@ data Story = Story {
     header :: Header
   , dynMem :: B.ByteString
   , staticMem :: B.ByteString
-} deriving (Show)
+}
+
+instance Show Story where
+  show s = printf "Story { header = %s, dynMem = %i, staticMem = %i }" (show . header $ s) (B.length . dynMem $ s) (B.length . staticMem $ s)
+
+type StoryReader a = StateT (Either String Story,Int) (Either String) a
+-- getWord8 :: StoryReader a
+-- getWord8 = lift BS.getWord8
+
+isAt :: StoryReader Int
+isAt = do x <- get
+          return $ snd x -- lift $ return 1
+
+setAt :: Int -> StoryReader ()
+setAt x = do (story,offset) <- get
+             put (story, x)
+
+exec :: BS.Get a -> StoryReader a
+exec x = do
+  (story,offset) <- get
+  let r = do BS.skip offset
+             xx <- x
+             bread <- BS.bytesRead
+             return (bread,xx)
+  let yy = do s <- story
+              fst . BS.runGet r . dynMem $ s
+  setAt $ either (const offset) fst yy
+  lift (fmap snd yy)
 
 readHeader :: BS.Get Header
 readHeader = do
@@ -50,10 +78,11 @@ readHeader = do
     bobjectTableLoc bglobalVarLoc bbaseStaticAddr bflags2 babbrevLoc
     blength bchecksum
 
-readStory :: B.ByteString -> Either String Story
+readStory :: B.ByteString -> StoryReader ()
 readStory bstr = do
-  let (eheader,_) = BS.runGet readHeader bstr
-  vheader <- eheader
+  let eheader = (fst . BS.runGet readHeader) bstr
+  vheader <- lift eheader
   let staticOffset = toInt . baseStaticAddr $ vheader
   let (dyn,stat) = B.splitAt staticOffset bstr
-  return $ Story vheader dyn stat -- (B.take staticOffset (B.singleton 0)
+  let story = Story vheader dyn stat -- (B.take staticOffset (B.singleton 0)
+  put (Right story, 0)

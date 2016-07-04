@@ -1,1 +1,1 @@
-cabal test --show-details=always 
+cabal test --show-details=always --test-option=--color
