@@ -24,11 +24,11 @@ spec = describe "Read Story Header" $ do
   it "should monad" $ do
     s <- readStory <$> minizork ()
     traceShowM s -- $ (Header.header .  $ s)
-    let m = do traceShowM "START"
+    let m = do -- traceShowM "START"
                setAt 0
-               traceShowM "SET AT"
+              --  traceShowM "SET AT"
               --  readStory fi
-               traceShowM "readStory"
+              --  traceShowM "readStory"
               --  traceShowM s
               --  exec readHeader
     either expectationFailure print $ run s m

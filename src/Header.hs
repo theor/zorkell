@@ -1,5 +1,7 @@
 module Header where
 
+import Debug.Trace
+
 import Text.Printf
 import Data.Word
 import qualified Data.ByteString as B
@@ -53,7 +55,14 @@ setAtAddr x = do
 exec :: BS.Get a -> StoryReader a
 exec x = do
   (story,offset) <- get
-  let r = do BS.skip offset
+  -- traceShowM ("cur offset", offset)
+  let r = do
+             bread <- BS.bytesRead
+             rema <- BS.remaining
+            --  traceShowM ("will skip", offset, "read", bread, "remaining", rema)
+             let staticStart = toInt . baseStaticAddr . header $ story
+             BS.skip $ if offset < staticStart then offset else offset - staticStart
+            --  traceShowM ("Skipped", offset)
              xx <- x
              bread <- BS.bytesRead
              return (bread,xx)

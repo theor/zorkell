@@ -31,6 +31,7 @@ runGet fi = fst . flip S.runGet fi
 main :: IO ()
 main = hspec $ do
 
+  StorySpec.spec
   ZStringSpec.spec
   ObjectTableSpec.spec
   DictionarySpec.spec
@@ -39,7 +40,6 @@ main = hspec $ do
   --   it "should decode short form" $
   --     BG.runBitGet (B.pack [0b10000000]) OpCodes.readForm `shouldBe` Right Short
 
-  StorySpec.spec
 -- stateT BS.get
 -- state addr*ByteString
 -- put @addr

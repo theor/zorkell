@@ -15,12 +15,13 @@ import qualified ObjectTable as OT
 
 spec = describe "Dictionary" $ do
   it "tmp" $ print 0
-  -- it "should read dict header" $ do
-  --   fi <- minizork ()
-  --   either expectationFailure id $ do
-  --     s <- readStory fi
-  --     h <- runStoryRead (Dictionary.readDictHeader (ByteAddr 0x285A)) $ s
-  --     return $ print h
+
+  it "should read dict header" $ do
+    s <- readStory <$> minizork ()
+    ev (run s Dictionary.readDictHeader)
+      (\x -> do print x
+                Dictionary.count x `shouldBe` 5)
+
   -- it "should read dict entries" $ do
   --   fi <- minizork ()
   --   let r = do eh <- fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi

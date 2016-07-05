@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module ObjectTable where
 
 import Control.Monad
@@ -14,15 +16,21 @@ import Text.Printf
 
 import Debug.Trace
 
-newtype ObjectNumber = ObjectNumber Word8 deriving (Eq)
+newtype ObjectNumber = ObjectNumber Word8
+  deriving (Eq, Ord, Num, Integral, Real, Enum)
+-- instance Integral ObjectNumber where
+--   fromIntegral o = 0
+
 invalidObject = (==) $ ObjectNumber 0
 
 instance Show ObjectNumber where
   show (ObjectNumber o) = printf "0x%02x" o
+
 -- In Versions 1 to 3, there are at most 255 objects, each having a 9-byte entry as follows:
 -- the 32 attribute flags     parent     sibling     child   properties
 -- --32 bits in 4 bytes---   ---3 bytes------------------  ---2 bytes--
 data ObjectHeader = ObjectHeader { flags :: Word32
+                                 , oid :: ObjectNumber
                                  , parent :: ObjectNumber
                                  , sibling :: ObjectNumber
                                  , child :: ObjectNumber
@@ -40,15 +48,12 @@ type PropertyHeader = (Int, String)
 readPropHeader :: StoryReader PropertyHeader
 readPropHeader = do
   (s,_) <- get
-  -- setAtAddr . objectTableLoc . Header.header $ s
   exec $ do len <- (2*) . fromIntegral  <$> BS.getWord8
             str <- BS.getByteString len
             return (len, if len == 0 then "<unnamed>" else ZString.decodeString str)
-  -- s2 <- s
-  -- h <- Header.header s2
-  -- return 1
 
 objectAddr :: ByteAddr -> Int -> Int
+-- property defaults table. 31 words in v1-3, 63 in v4+
 objectAddr h on = toInt h + 62 + 9 * (on - 1)
 
 getObjectAddr :: Int -> StoryReader Int
@@ -66,16 +71,7 @@ readObjectHeader on = do
     s <- ObjectNumber <$> BS.getWord8
     c <- ObjectNumber <$> BS.getWord8
     props <- getByteAddr
-    return $ ObjectHeader f p s c props
-
-
--- readObjectHeaderA :: Int -> BS.Get ObjectHeader
--- readObjectHeaderA h on = do
-
--- readObject addr on = do
---   h <- readObjectHeader addr on
---   -- BS.skip
---   return h
+    return $ ObjectHeader f (ObjectNumber . fromIntegral $ on) p s c props
 
 readAllObjects :: StoryReader [Object]
 readAllObjects = do
@@ -96,6 +92,3 @@ objectCount = do
   let delta = toInt fstPropTable - fstObjAddr
   traceShowM (fstPropTable, fstObjAddr, delta)
   return $ delta `div` 9
-
-readObjectTable (ByteAddr a) =
-  BS.skip 31 -- property defaults table. 31 words in v1-3, 63 in v4+

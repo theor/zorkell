@@ -1,5 +1,7 @@
 module Dictionary where
 
+import Debug.Trace
+
 import Control.Monad
 import Data.Word
 import qualified Data.ByteString as B
@@ -7,7 +9,7 @@ import qualified Data.Binary.Strict.Get as BS
 
 import Types
 import BinUtils
--- import Header
+import Header
 import qualified ZString
 
 --   n     list of keyboard input codes   entry-length  number-of-entries
@@ -34,16 +36,22 @@ dictStart dictLoc count = dictLoc + 4 + (fromIntegral count :: ByteAddr)
 
 wToInt x = fromIntegral x :: Int
 
-readDictHeader :: ByteAddr -> BS.Get DictHeader
-readDictHeader dicloc = do
-  BS.skip (toInt dicloc)
-  count <- BS.getWord8  @@@ dicloc
-  rinputCodes <-  Control.Monad.replicateM (fromIntegral count :: Int) BS.getWord8
+readDictHeader :: StoryReader DictHeader
+readDictHeader = do
+  h <- getHeader
+  let dictAddr = dictionaryLoc h
+  setAtAddr dictAddr
+  vIsAt <- isAt
+  -- traceShowM ("set at", vIsAt)
+  exec $ do
+    count <- BS.getWord8
+    let firstEntryAddr = dictStart dictAddr count
+    rinputCodes <-  Control.Monad.replicateM (fromIntegral count) BS.getWord8
   -- BS.getWord8
   -- BS.skip (fromIntegral count :: Int)
-  entryLength <- BS.getWord8
-  entryCount <- getWord16
-  return $ DictHeader count rinputCodes (wToInt entryLength) (wToInt entryCount) (dictStart dicloc count)
+    entryLength <- fromIntegral <$> BS.getWord8
+    entryCount <- fromIntegral <$> getWord16
+    return $ DictHeader count rinputCodes entryLength entryCount firstEntryAddr
 
 readEntry :: Int -> BS.Get DictEntry
 readEntry entryLength = do
