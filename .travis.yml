@@ -1,6 +1,5 @@
 sudo: false
 language: haskell
-ghc: '7.10.3'
 compiler: ": #GHC 7.10.3"
 env:
   - CABALVER=1.22 GHCVER=7.10.3
