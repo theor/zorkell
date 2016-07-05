@@ -9,4 +9,5 @@ addons:
       - hvr-ghc
     packages:
       - ghc-7.10.3
-      - cabal-install-1.22.4
+      - cabal-install-1.24
+      - ghc-head
