@@ -13,6 +13,7 @@ import ZString
 import qualified Dictionary
 import qualified ObjectTable as OT
 
+spec :: Spec
 spec = describe "Dictionary" $ do
   it "tmp" $ print 0
 

@@ -63,6 +63,21 @@ spec = describe "Decode Abbrev" $ do
                    ZString.decodeString)
       (`shouldBe` "Egyptian Room")
 
+  it "should decode long 'Floor Control...' string" $ do
+        s <- readStory <$> minizork ()
+        ev (run s $ do setAt 0xb106
+                       ZString.decodeString)
+          (`shouldBe` "\"Flood Control Dam #3 was constructed in 783 GUE with a"
+          ++ " grant of 37 million zorkmids from Lord Dimwit Flathead the "
+          ++ "Excessive. This impressive structure is composed of 370,000 "
+          ++ "cubic feet of concrete, is 256 feet tall and 193 feet wide.\n\n"
+          ++ "The construction of FCD#3 took 112 days from ground breaking to "
+          ++ "dedication. It required a work force of 384 slaves, 34 slave "
+          ++ "drivers, and 12 engineers, 2345 bureaucrats, and nearly one "
+          ++ "million dead trees.\n\nAs you start your tour, notice the more "
+          ++ "interesting features of FCD#3. On your right...")
+
+
 
 testDecode expected bs = do
   es <- readStory <$> minizork ()
