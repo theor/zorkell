@@ -73,16 +73,18 @@ readObjectHeader on = do
     props <- getByteAddr
     return $ ObjectHeader f (ObjectNumber . fromIntegral $ on) p s c props
 
+readObject :: Int -> StoryReader Object
+readObject i = do obj <- readObjectHeader i
+                  setAtAddr $ properties obj
+                  (nameLen,nameStr) <- readPropHeader
+                  return $ Object obj nameLen nameStr
+
 readAllObjects :: StoryReader [Object]
 readAllObjects = do
   header <- getHeader
   count <- objectCount
-  let r i = do obj <- readObjectHeader i
-               setAtAddr $ properties obj
-               (nameLen,nameStr) <- readPropHeader
-               return $ Object obj nameLen nameStr
   let i = [1,2..count]
-  mapM r i
+  mapM readObject i
 
 objectCount :: StoryReader Int
 objectCount = do

@@ -31,10 +31,10 @@ runGet fi = fst . flip S.runGet fi
 main :: IO ()
 main = hspec $ do
 
-  StorySpec.spec
+  -- StorySpec.spec
   ZStringSpec.spec
-  ObjectTableSpec.spec
-  DictionarySpec.spec
+  -- ObjectTableSpec.spec
+  -- DictionarySpec.spec
   --
   -- describe "Opcodes" $
   --   it "should decode short form" $
