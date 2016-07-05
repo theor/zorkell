@@ -56,18 +56,19 @@ exec :: BS.Get a -> StoryReader a
 exec x = do
   (story,offset) <- get
   -- traceShowM ("cur offset", offset)
+  let staticStart = toInt . baseStaticAddr . header $ story
+  let isDynMem = offset < staticStart
   let r = do
              bread <- BS.bytesRead
              rema <- BS.remaining
             --  traceShowM ("will skip", offset, "read", bread, "remaining", rema)
-             let staticStart = toInt . baseStaticAddr . header $ story
-             BS.skip $ if offset < staticStart then offset else offset - staticStart
+             BS.skip $ if isDynMem then offset else offset - staticStart
             --  traceShowM ("Skipped", offset)
              xx <- x
-             bread <- BS.bytesRead
+             bread <- (+ if isDynMem then 0 else staticStart) <$> BS.bytesRead
              return (bread,xx)
-  let yy = fst . BS.runGet r . dynMem $ story
-  setAt $ either (const offset) fst yy
+  let yy = fst . BS.runGet r . (if isDynMem then dynMem else staticMem) $ story
+  setAt $ either (const $ trace "ERROR SET" offset) fst yy
   lift (fmap snd yy)
 --
 run :: Either String Story -> StoryReader a -> Either String a

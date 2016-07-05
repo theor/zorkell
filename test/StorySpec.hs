@@ -27,7 +27,7 @@ spec = describe "Read Story Header" $ do
     let m = do -- traceShowM "START"
                setAt 0
               --  traceShowM "SET AT"
-              --  readStory fi
+               getHeader
               --  traceShowM "readStory"
               --  traceShowM s
               --  exec readHeader

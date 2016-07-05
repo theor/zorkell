@@ -41,10 +41,12 @@ readDictHeader = do
   h <- getHeader
   let dictAddr = dictionaryLoc h
   setAtAddr dictAddr
-  vIsAt <- isAt
-  -- traceShowM ("set at", vIsAt)
+  vIsAt <- ByteAddr . fromIntegral <$> isAt
+  traceShowM ("set at", vIsAt)
   exec $ do
+    bread <- BS.bytesRead
     count <- BS.getWord8
+    traceShowM ("sep count", count, bread)
     let firstEntryAddr = dictStart dictAddr count
     rinputCodes <-  Control.Monad.replicateM (fromIntegral count) BS.getWord8
   -- BS.getWord8
@@ -53,18 +55,23 @@ readDictHeader = do
     entryCount <- fromIntegral <$> getWord16
     return $ DictHeader count rinputCodes entryLength entryCount firstEntryAddr
 
-readEntry :: Int -> BS.Get DictEntry
+readEntry :: Int -> StoryReader DictEntry
 readEntry entryLength = do
-  etext <- BS.getByteString 4
-  edata <- replicateM (entryLength - 4) BS.getWord8 -- ByteString
-  return (ZString.decodeString etext,edata)
+  pos <- isAt
+  -- traceShowM ("read entry, at", pos)
+  etext <- ZString.decodeString
+  setAt (pos + 4)
+  edata <- exec $ replicateM (entryLength - 4) BS.getWord8
+
+  return (etext,edata)
 
 
-readDictionary :: DictHeader -> BS.Get Dictionary
+readDictionary :: DictHeader -> StoryReader Dictionary
 readDictionary header = do
   let start = firstEntryAddr header
-  BS.skip (toInt start)
-  let entries = []
+  -- traceShowM ("Dict first entry", start)
+  setAtAddr start
   -- entries <- replicateM 1 (readEntry . entryLength $ header)
   entries <- replicateM (entryCount header) (readEntry . entryLength $ header)
+  -- entries <- replicateM 3 (readEntry . entryLength $ header)
   return $ Dictionary header entries

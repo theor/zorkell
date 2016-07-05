@@ -20,14 +20,13 @@ spec = describe "Dictionary" $ do
     s <- readStory <$> minizork ()
     ev (run s Dictionary.readDictHeader)
       (\x -> do print x
-                Dictionary.count x `shouldBe` 5)
+                Dictionary.count x `shouldBe` 3)
 
-  -- it "should read dict entries" $ do
-  --   fi <- minizork ()
-  --   let r = do eh <- fst . S.runGet (Dictionary.readDictHeader (ByteAddr 0x285A)) $ fi
-  --              fst . S.runGet (Dictionary.readDictionary eh) $ fi
-  --
-  --   ev r $ \x -> do
-  --     print . Dictionary.header $ x
-  --     let f = map print (take 10 . Dictionary.entries $ x)
-  --     sequence_ f
+  it "should read dict entries" $ do
+    s <- readStory <$> minizork ()
+    ev (run s $ do eh <- Dictionary.readDictHeader
+                   Dictionary.readDictionary eh) $ \x -> do
+      print . Dictionary.header $ x
+      let p x = print x
+      let f = map p (take 10 . Dictionary.entries $ x)
+      sequence_ f

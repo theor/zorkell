@@ -48,9 +48,12 @@ type PropertyHeader = (Int, String)
 readPropHeader :: StoryReader PropertyHeader
 readPropHeader = do
   (s,_) <- get
-  exec $ do len <- (2*) . fromIntegral  <$> BS.getWord8
-            str <- BS.getByteString len
-            return (len, if len == 0 then "<unnamed>" else ZString.decodeString str)
+  len <- exec $ do len <- (2*) . fromIntegral  <$> BS.getWord8
+                        --  str <- BS.getByteString len
+                  --  name <- if len == 0 then return "<unnamed>" else ZString.decodeString
+                   return len
+  name <- if len == 0 then return "<unnamed>" else ZString.decodeString
+  return (len, name)
 
 objectAddr :: ByteAddr -> Int -> Int
 -- property defaults table. 31 words in v1-3, 63 in v4+
@@ -92,5 +95,5 @@ objectCount = do
   let fstPropTable = properties fstObj
   fstObjAddr <- getObjectAddr 1
   let delta = toInt fstPropTable - fstObjAddr
-  traceShowM (fstPropTable, fstObjAddr, delta)
+  -- traceShowM (fstPropTable, fstObjAddr, delta)
   return $ delta `div` 9
