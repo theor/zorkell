@@ -14,6 +14,8 @@ before_install:
   - cabal --version
   - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
   - travis_retry cabal update
+install:
+  - cabal install -j --only-dependencies --enable-tests 
 
 script:
  - cabal configure --enable-tests -v2  # -v2 provides useful information for debugging
