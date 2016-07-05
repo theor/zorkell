@@ -1,6 +1,6 @@
 sudo: false
 language: haskell
-ghc: 7.10.3
+ghc: '7.10.3'
 env:
   - CABALVER=1.22.6 GHCVER=7.10.3
 addons:
