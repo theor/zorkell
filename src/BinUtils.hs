@@ -22,6 +22,7 @@ module BinUtils where
   -- instance ReadCount BG.BitGet where
   --   bytesRead = BG.r
 
+  -- (@@) :: BS.Get b -> Int -> BS.Get b
   (@@) :: BS.Get b -> Int -> BS.Get b
   f @@ i = do
     bytesRead <- BS.bytesRead

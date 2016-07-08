@@ -52,7 +52,7 @@ setAtAddr x = do
   (story,offset) <- get
   put (story, toInt x)
 
-exec :: BS.Get a -> StoryReader a
+-- exec :: BS.Get a -> StoryReader a
 exec x = do
   (story,offset) <- get
   -- traceShowM ("cur offset", offset)

@@ -21,6 +21,7 @@ newtype ObjectNumber = ObjectNumber Word8
 -- instance Integral ObjectNumber where
 --   fromIntegral o = 0
 
+invalidObject :: ObjectNumber -> Bool
 invalidObject = (==) $ ObjectNumber 0
 
 instance Show ObjectNumber where
@@ -48,10 +49,7 @@ type PropertyHeader = (Int, String)
 readPropHeader :: StoryReader PropertyHeader
 readPropHeader = do
   (s,_) <- get
-  len <- exec $ do len <- (2*) . fromIntegral  <$> BS.getWord8
-                        --  str <- BS.getByteString len
-                  --  name <- if len == 0 then return "<unnamed>" else ZString.decodeString
-                   return len
+  len <- exec $ (2 *) . fromIntegral <$> BS.getWord8
   name <- if len == 0 then return "<unnamed>" else ZString.decodeString
   return (len, name)
 
@@ -63,6 +61,7 @@ getObjectAddr :: Int -> StoryReader Int
 getObjectAddr n = do
   header <- getHeader
   return $ objectAddr (objectTableLoc header) n
+
 
 readObjectHeader :: Int -> StoryReader ObjectHeader
 readObjectHeader on = do

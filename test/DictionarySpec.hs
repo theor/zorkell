@@ -28,6 +28,6 @@ spec = describe "Dictionary" $ do
     ev (run s $ do eh <- Dictionary.readDictHeader
                    Dictionary.readDictionary eh) $ \x -> do
       print . Dictionary.header $ x
-      let p x = print x
+      let p = print
       let f = map p (take 10 . Dictionary.entries $ x)
       sequence_ f

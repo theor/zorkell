@@ -52,11 +52,11 @@ spec = describe "Decode Abbrev" $ do
       Left a -> expectationFailure a
       Right a -> a `shouldBe` (False, [0x19 :: Word8, 0x0d :: Word8, 0x0a :: Word8])
 
-  it "should unpack zstring" $
+  it "should unpack zstring" $ do
     case BG.runBitGet (B.pack [0b11010011,0b00100001]) ZString.decode of
-      Left a -> expectationFailure a
+      -- Left a -> expectationFailure a
       Right a -> a `shouldBe` (True, [0b10100 :: Word8, 0b11001 :: Word8, 0b1:: Word8])
-
+ 
   it "should decode zstring 'Egyptian Room'" $ do
     s <- readStory <$> minizork ()
     ev (run s $ do setAt 0x135c
