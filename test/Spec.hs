@@ -1,7 +1,7 @@
-{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
+-- {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 -- {-# LANGUAGE BinaryLiterals #-}
 --
--- import Test.Hspec
+import Test.Hspec
 -- import Data.Either
 -- import Data.Word
 -- import qualified Data.ByteString as B
@@ -19,9 +19,10 @@
 -- import qualified Dictionary
 --
 -- import qualified ZStringSpec
--- import qualified StorySpec
+import qualified StorySpec
 -- import qualified ObjectTableSpec
 -- import qualified DictionarySpec
+import qualified BinReaderSpec
 --
 -- minizork () = B.readFile "stories/minizork.z3"
 --
@@ -30,9 +31,10 @@
 --
 --
 -- main :: IO ()
--- main = hspec $ do
+main = hspec $ do
+    -- BinReaderSpec.spec
 --
---   -- StorySpec.spec
+  StorySpec.spec
 --   -- ZStringSpec.spec
 --   ObjectTableSpec.spec
 --   -- DictionarySpec.spec

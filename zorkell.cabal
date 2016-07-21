@@ -14,7 +14,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib,Types,Header,ZString,BinUtils,OpCodes,Dictionary, ObjectTable
+  exposed-modules:     Lib
+                     , Types
+                     , Header
+                     , ZString
+                     , BinUtils
+                     , OpCodes
+                     , Dictionary
+                     , ObjectTable
+                     , BinReader
   -- other-modules:
   build-depends:       base >= 4.7.0.0 && < 5.0.0.0
                      , vector

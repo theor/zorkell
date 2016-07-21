@@ -5,12 +5,16 @@ module BinUtils where
 
   import Types
   import qualified Data.Binary.Strict.Get as BS
+  import qualified BinReader as BR
 
   getWord16 :: BS.Get Word16
   getWord16 = BS.getWord16be
 
   getByteAddr :: BS.Get ByteAddr
   getByteAddr = ByteAddr <$> getWord16
+
+  getByteAddrB :: BR.BinReader ByteAddr
+  getByteAddrB = ByteAddr <$> BR.getWord16
 
   toInt :: ByteAddr -> Int
   toInt (ByteAddr a) = fromIntegral a :: Int

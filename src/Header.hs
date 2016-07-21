@@ -6,12 +6,15 @@ import Text.Printf
 import Data.Word
 import qualified Data.ByteString as B
 import qualified Data.Binary.Strict.Get as BS
+import qualified BinReader as BR
 import Control.Monad.State
 import Types
 import BinUtils
 
+newtype Version = Version Int
+  deriving (Show, Eq)
 data Header = Header {
-                  version :: Word8 -- 0
+                  version :: Version -- 0
                 , flags1 :: Word8 -- 1
                 , baseAddr :: ByteAddr -- 4
                 , initPc :: ByteAddr -- 6
@@ -84,20 +87,41 @@ getHeader = do
 
 readHeader :: BS.Get Header
 readHeader = do
-  v <- BS.getWord8              @@ 0x0
-  bflags1 <- BS.getWord8         @@ 0x1
-  BS.skip 2                     @@ 0x2
-  base <- getByteAddr           @@ 0x4
-  binitPc <- getByteAddr         @@ 0x6
-  bdictionaryLoc <- getByteAddr  @@ 0x8
-  bobjectTableLoc <- getByteAddr @@ 0xA
-  bglobalVarLoc <- getByteAddr   @@ 0xC
-  bbaseStaticAddr <- getByteAddr @@ 0xE
-  bflags2 <- BS.getWord8         @@ 0x10
+  v <- Version . fromIntegral <$> BS.getWord8 @@ 0x0
+  bflags1 <- BS.getWord8                      @@ 0x1
+  BS.skip 2                                   @@ 0x2
+  base <- getByteAddr                         @@ 0x4
+  binitPc <- getByteAddr                      @@ 0x6
+  bdictionaryLoc <- getByteAddr               @@ 0x8
+  bobjectTableLoc <- getByteAddr              @@ 0xA
+  bglobalVarLoc <- getByteAddr                @@ 0xC
+  bbaseStaticAddr <- getByteAddr              @@ 0xE
+  bflags2 <- BS.getWord8                      @@ 0x10
   BS.skip 7
-  babbrevLoc <- getByteAddr      @@ 0x18
-  blength <- getWord16           @@ 0x1A
-  bchecksum <- getWord16         @@ 0x1C
+  babbrevLoc <- getByteAddr                   @@ 0x18
+  blength <- getWord16                        @@ 0x1A
+  bchecksum <- getWord16                      @@ 0x1C
+
+  return $ Header v bflags1 base binitPc bdictionaryLoc
+    bobjectTableLoc bglobalVarLoc bbaseStaticAddr bflags2 babbrevLoc
+    blength bchecksum
+
+readHeaderB :: BR.BinReader Header
+readHeaderB = do
+  v <- Version . fromIntegral <$> BR.getWord8 -- @@ 0x0
+  bflags1 <- BR.getWord8                      -- @@ 0x1
+  BR.skip 2                                   -- @@ 0x2
+  base <- getByteAddrB                         -- @@ 0x4
+  binitPc <- getByteAddrB                      -- @@ 0x6
+  bdictionaryLoc <- getByteAddrB               -- @@ 0x8
+  bobjectTableLoc <- getByteAddrB              -- @@ 0xA
+  bglobalVarLoc <- getByteAddrB                -- @@ 0xC
+  bbaseStaticAddr <- getByteAddrB              -- @@ 0xE
+  bflags2 <- BR.getWord8                      -- @@ 0x10
+  BR.skip 7
+  babbrevLoc <- getByteAddrB                   -- @@ 0x18
+  blength <- BR.getWord16                        -- @@ 0x1A
+  bchecksum <- BR.getWord16                      -- @@ 0x1C
 
   return $ Header v bflags1 base binitPc bdictionaryLoc
     bobjectTableLoc bglobalVarLoc bbaseStaticAddr bflags2 babbrevLoc
@@ -110,3 +134,6 @@ readStory bstr = do
   let staticOffset = toInt . baseStaticAddr $ vheader
   let (dyn,stat) = B.splitAt staticOffset bstr
   return $ Story vheader dyn stat -- (B.take staticOffset (B.singleton 0)
+
+v3OrLower :: Version -> Bool
+v3OrLower (Version v) = v <= 3
